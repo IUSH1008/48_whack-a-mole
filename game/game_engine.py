@@ -42,24 +42,15 @@ class GameEngine:
     def _handle_click(self, pos):
         hit_something = False
 
-        # NOTE: this loop does not stop after the first hole it finds
-        # under the click - it checks every hole. Each hole's hit-box
-        # (Hole.hit_size) is deliberately a bit larger than the
-        # spacing between holes, so neighboring hit-boxes overlap
-        # slightly near the grid lines. If two adjacent moles happen
-        # to both be up and the player clicks in that overlap zone,
-        # both holes register a hit from the same click, awarding two
-        # points for a single whack. See Task 1 in the README.
         for hole in self.holes:
-            if hole.rect().collidepoint(pos):
+            if hole.active and hole.rect().collidepoint(pos):
                 if hole.whack():
                     self.score += 1
                     hit_something = True
+                    break
 
         if not hit_something:
             self.misses += 1
-
-    def handle_input(self):
         # Reserved for continuously-held-key input; this game is
         # entirely mouse-driven, so there's nothing to poll here.
         pass
