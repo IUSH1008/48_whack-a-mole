@@ -1,7 +1,7 @@
 import pygame
 from game.game_engine import GameEngine
 
-# Initialize pygame/Start application
+# Initialize pygame
 pygame.init()
 
 # Screen dimensions
@@ -16,16 +16,20 @@ GRASS_GREEN = (120, 170, 90)
 clock = pygame.time.Clock()
 FPS = 60
 
-# Game loop
+# Game engine
 engine = GameEngine(WIDTH, HEIGHT)
+
 
 def main():
     running = True
-    while running:
+
+    while running and engine.running:
         SCREEN.fill(GRASS_GREEN)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
             engine.handle_event(event)
 
         engine.handle_input()
@@ -36,6 +40,7 @@ def main():
         clock.tick(FPS)
 
     pygame.quit()
+
 
 if __name__ == "__main__":
     main()
