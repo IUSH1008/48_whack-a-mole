@@ -1,5 +1,6 @@
 import pygame
 import random
+import os
 from .hole import Hole
 
 # Game Engine
@@ -7,8 +8,6 @@ from .hole import Hole
 DARK_BROWN = (60, 40, 20)
 MOLE_BROWN = (140, 95, 55)
 BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-GRAY = (80, 80, 80)
 
 
 class GameEngine:
@@ -44,50 +43,96 @@ class GameEngine:
         self.replay_menu = False
         self.running = True
 
+        # -----------------------------
+        # Task 4: Sound initialization
+        # -----------------------------
+        self.sounds_enabled = False
+        self.whack_sound = None
+        self.miss_sound = None
+        self.game_over_sound = None
+
+        try:
+            if not pygame.mixer.get_init():
+                pygame.mixer.init()
+
+            sounds_folder = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "sounds"
+            )
+
+            whack_path = os.path.join(sounds_folder, "whack.wav")
+            miss_path = os.path.join(sounds_folder, "miss.wav")
+            game_over_path = os.path.join(sounds_folder, "game_over.wav")
+
+            if os.path.exists(whack_path):
+                self.whack_sound = pygame.mixer.Sound(whack_path)
+
+            if os.path.exists(miss_path):
+                self.miss_sound = pygame.mixer.Sound(miss_path)
+
+            if os.path.exists(game_over_path):
+                self.game_over_sound = pygame.mixer.Sound(game_over_path)
+
+            self.sounds_enabled = True
+
+        except pygame.error:
+            # If audio cannot be initialized, the game still works.
+            self.sounds_enabled = False
+
     def handle_event(self, event):
-    # Game over screen
-     if self.game_over and not self.replay_menu:
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_r:
-                self.replay_menu = True
-            elif event.key == pygame.K_q:
-                self.running = False
-        return
+        # Game over screen
+        if self.game_over and not self.replay_menu:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    self.replay_menu = True
+                elif event.key == pygame.K_q:
+                    self.running = False
+            return
 
-    # Difficulty selection menu
-     if self.replay_menu:
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_1 or event.key == pygame.K_KP1:
-                self.start_new_round("Easy")
+        # Difficulty selection menu
+        if self.replay_menu:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1 or event.key == pygame.K_KP1:
+                    self.start_new_round("Easy")
 
-            elif event.key == pygame.K_2 or event.key == pygame.K_KP2:
-                self.start_new_round("Medium")
+                elif event.key == pygame.K_2 or event.key == pygame.K_KP2:
+                    self.start_new_round("Medium")
 
-            elif event.key == pygame.K_3 or event.key == pygame.K_KP3:
-                self.start_new_round("Hard")
+                elif event.key == pygame.K_3 or event.key == pygame.K_KP3:
+                    self.start_new_round("Hard")
 
-            elif event.key == pygame.K_q:
-                self.running = False
-        return
+                elif event.key == pygame.K_q:
+                    self.running = False
+            return
 
-    # Normal gameplay
-     if event.type == pygame.MOUSEBUTTONDOWN:
-        self._handle_click(event.pos)
+        # Normal gameplay
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            self._handle_click(event.pos)
 
     def _handle_click(self, pos):
         hit_something = False
 
         # Task 1:
         # Only hit active moles and stop after the first successful hit.
+        # This prevents one click from scoring multiple points.
         for hole in self.holes:
             if hole.active and hole.rect().collidepoint(pos):
                 if hole.whack():
                     self.score += 1
                     hit_something = True
+
+                    # Task 4: Successful whack sound
+                    if self.sounds_enabled and self.whack_sound:
+                        self.whack_sound.play()
+
                     break
 
         if not hit_something:
             self.misses += 1
+
+            # Task 4: Missed click sound
+            if self.sounds_enabled and self.miss_sound:
+                self.miss_sound.play()
 
     def handle_input(self):
         pass
@@ -101,6 +146,11 @@ class GameEngine:
         if self.time_left_frames <= 0:
             self.time_left_frames = 0
             self.game_over = True
+
+            # Task 4: Round ending sound
+            if self.sounds_enabled and self.game_over_sound:
+                self.game_over_sound.play()
+
             return
 
         for hole in self.holes:
@@ -175,7 +225,7 @@ class GameEngine:
             (self.width - 140, 10),
         )
 
-        # Task 2: Game Over screen
+        # Task 2 + Task 3: Game Over screen
         if self.game_over and not self.replay_menu:
             game_over_text = self.game_over_font.render(
                 "GAME OVER",
